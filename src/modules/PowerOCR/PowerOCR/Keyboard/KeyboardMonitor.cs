@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-using Microsoft.PowerToys.Settings.UI.Library.Utilities;
+using PowerOCR.Helpers;
 using PowerOCR.Services;
 using PowerOCR.Settings;
 
@@ -35,6 +35,7 @@ internal sealed partial class KeyboardMonitor : IDisposable
 
     public void Start()
     {
+        DebugLogger.LogInfo($"KeyboardMonitor started. Active hotkey: '{string.Join("+", _activationKeys)}'");
         _keyboardHook = new GlobalKeyboardHook();
         _keyboardHook.KeyboardPressed += Hook_KeyboardPressed;
     }
@@ -53,6 +54,8 @@ internal sealed partial class KeyboardMonitor : IDisposable
 
             _activationKeys.Sort();
         }
+
+        DebugLogger.LogInfo($"Configured Activation Keys: [{string.Join(", ", _activationKeys)}]");
     }
 
     private void ActivationShortcut_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs? e)
