@@ -20,6 +20,10 @@
   <a href="#-whats-new">Release notes</a>
 </h3>
 
+> [!TIP]
+> **Featured in this fork: [PowerOCR (Text Extractor with AI & Gemini Vision)](src/modules/PowerOCR/README.md)**  
+> Enhanced with **Direct Gemini Vision OCR (`V`)**, **AI Code/Table Cleanup (`A`)**, **Extreme Data Fidelity**, and non-intrusive **Acrylic HUD Pill Toast**. [Read PowerOCR Docs »](src/modules/PowerOCR/README.md)
+
 ## 🔨 Utilities
 
 PowerToys includes over 30 utilities to help you customize and optimize your Windows experience:
@@ -35,7 +39,7 @@ PowerToys includes over 30 utilities to help you customize and optimize your Win
 | [<img src="doc/images/icons/NewPlus.png" alt="New+ icon" height="16"> New+](https://aka.ms/PowerToysOverview_NewPlus) | [<img src="doc/images/icons/Peek.png" alt="Peek icon" height="16"> Peek](https://aka.ms/PowerToysOverview_Peek) | [<img src="doc/images/icons/PowerDisplay.png" alt="PowerDisplay icon" height="16"> PowerDisplay](https://aka.ms/PowerToysOverview_PowerDisplay) |
 | [<img src="doc/images/icons/PowerRename.png" alt="PowerRename icon" height="16"> PowerRename](https://aka.ms/PowerToysOverview_PowerRename) | [<img src="doc/images/icons/PowerToys%20Run.png" alt="PowerToys Run icon" height="16"> PowerToys Run](https://aka.ms/PowerToysOverview_PowerToysRun) | [<img src="doc/images/icons/PowerAccent.png" alt="Quick Accent icon" height="16"> Quick Accent](https://aka.ms/PowerToysOverview_QuickAccent) |
 | [<img src="doc/images/icons/Registry%20Preview.png" alt="Registry Preview icon" height="16"> Registry Preview](https://aka.ms/PowerToysOverview_RegistryPreview) | [<img src="doc/images/icons/MeasureTool.png" alt="Screen Ruler icon" height="16"> Screen Ruler](https://aka.ms/PowerToysOverview_ScreenRuler) | [<img src="doc/images/icons/Shortcut%20Guide.png" alt="Shortcut Guide icon" height="16"> Shortcut Guide](https://aka.ms/PowerToysOverview_ShortcutGuide) |
-| [<img src="doc/images/icons/PowerOCR.png" alt="Text Extractor icon" height="16"> Text Extractor](https://aka.ms/PowerToysOverview_TextExtractor) | [<img src="doc/images/icons/WindowHopper.png" alt="Window Hopper icon" height="16"> Window Hopper](https://aka.ms/PowerToysOverview_WindowHopper) | [<img src="doc/images/icons/Workspaces.png" alt="Workspaces icon" height="16"> Workspaces](https://aka.ms/PowerToysOverview_Workspaces) |
+| [<img src="doc/images/icons/PowerOCR.png" alt="Text Extractor icon" height="16"> Text Extractor (PowerOCR)](src/modules/PowerOCR/README.md) | [<img src="doc/images/icons/WindowHopper.png" alt="Window Hopper icon" height="16"> Window Hopper](https://aka.ms/PowerToysOverview_WindowHopper) | [<img src="doc/images/icons/Workspaces.png" alt="Workspaces icon" height="16"> Workspaces](https://aka.ms/PowerToysOverview_Workspaces) |
 | [<img src="doc/images/icons/ZoomIt.png" alt="ZoomIt icon" height="16"> ZoomIt](https://aka.ms/PowerToysOverview_ZoomIt) |   |   |
 
 ## 📦 Installation
