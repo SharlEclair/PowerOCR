@@ -1,36 +1,54 @@
 ---
 name: wpf-cswinrt-interop
-description: Guidelines and patterns for WPF STA UI thread safety, WinRT APIs, Windows Clipboard handling, and P/Invoke Win32 interop in PowerToys.
+description: Guidelines and patterns for Windows UI threading (WinUI 3 DispatcherQueue & WPF STA), WinRT APIs, Windows Clipboard handling, and P/Invoke Win32 interop.
 ---
 
-# WPF STA Threading, WinRT & Clipboard Guidelines
+# Windows Desktop Threading, WinRT & Clipboard Interop Guidelines
 
-## 1. WPF STA Threading Rules
-- All WPF `Window`, `Control`, and `Clipboard` operations **must** be executed on the WPF STA UI thread.
-- Check thread access before interacting with UI or Clipboard:
+## 1. Modern WinUI 3 Threading & Marshaling (PowerOCR Standard)
+- **UI Thread Dispatching**: In WinUI 3, all XAML elements, `AppWindow`, and Windows Runtime Clipboard APIs must execute on the UI thread via `Microsoft.UI.Dispatching.DispatcherQueue`:
+  ```csharp
+  if (dispatcherQueue != null && !dispatcherQueue.HasThreadAccess)
+  {
+      dispatcherQueue.TryEnqueue(() => Action());
+  }
+  else
+  {
+      Action();
+  }
+  ```
+- **Async Void Protection**: When dispatching asynchronous tasks through `DispatcherQueue.TryEnqueue(async () => ...)`, always wrap the entire lambda body in `try / catch (Exception ex)` to prevent unhandled task exceptions from crashing the host process.
+
+## 2. Modern WinRT Clipboard Access (`Windows.ApplicationModel.DataTransfer`)
+In WinUI 3 desktop apps, use the WinRT `DataPackage` API instead of legacy WPF `System.Windows.Clipboard`:
 ```csharp
-if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
-{
-    Application.Current.Dispatcher.Invoke(() => Action());
-    return;
-}
+var dataPackage = new DataPackage();
+dataPackage.RequestedOperation = DataPackageOperation.Copy;
+dataPackage.SetText(text);
+Clipboard.SetContent(dataPackage);
+Clipboard.Flush();
 ```
+*Tip: Always execute `Clipboard.SetContent` on the UI thread or STA thread.*
 
-## 2. Robust Clipboard Access
-Clipboard operations can transiently fail if another application holds a lock on the Windows clipboard (`CLIPBRD_E_CANT_OPEN`). Always use retry backoff:
+## 3. Safe GDI to WinRT OCR Bridge (`OcrEngine`)
+To pass a GDI `System.Drawing.Bitmap` to `Windows.Media.Ocr.OcrEngine` without COM exceptions:
+1. Save bitmap to a `MemoryStream` as PNG.
+2. Convert to WinRT `IRandomAccessStream` via `WindowsRuntimeStreamExtensions.AsRandomAccessStream(memoryStream)`.
+3. Decode using `BitmapDecoder.CreateAsync(randomAccessStream)`.
+4. Normalize `SoftwareBitmap` to `BitmapPixelFormat.Bgra8` and `BitmapAlphaMode.Premultiplied` (required by `OcrEngine.RecognizeAsync`).
+5. Explicitly dispose `SoftwareBitmap` after recognition to prevent unmanaged imaging memory leaks.
 
+## 4. Win32 Subclassing & Global Hotkeys
+In WinUI 3, `Window` does not expose a native `WndProc` override. Intercept window messages (`WM_HOTKEY = 0x0312`) using safe Win32 subclassing:
 ```csharp
-public static bool SetClipboardText(string text, Dispatcher? dispatcher = null, int maxRetries = 5, int delayMs = 50)
-{
-    // Retry loop handling COMException / ExternalException
-}
+NativeMethods.SetWindowSubclass(hWnd, _subclassProc, SubclassId, nuint.Zero);
 ```
+- Retain a strong reference to the `SubclassProc` delegate to prevent garbage collection.
+- Always call `DefSubclassProc` for unhandled messages.
+- Clean up with `RemoveWindowSubclass` in `Dispose()`.
 
-## 3. WinRT OCR API Integration
-- Uses `Windows.Media.Ocr.OcrEngine` and `Windows.Graphics.Imaging.SoftwareBitmap`.
-- Enumerates installed Windows OCR languages via `OcrEngine.AvailableRecognizerLanguages`.
+## 5. Legacy WPF STA Compatibility (Older Modules)
+For legacy WPF modules still present in PowerToys:
+- Use `Application.Current.Dispatcher.CheckAccess()` and `Application.Current.Dispatcher.Invoke()`.
+- Handle `CLIPBRD_E_CANT_OPEN` errors with exponential backoff retries when accessing `System.Windows.Clipboard`.
 
-## 4. Win32 Hooking & Window Activation
-- Low-level keyboard hook: `SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, user32Handle, 0)`.
-- Window activation: `AttachThreadInput` + `SetForegroundWindow` to steal focus onto full-screen transparent OCR overlay.
-- Keep overlay windows `Topmost = true` so they layer over active applications.

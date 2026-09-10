@@ -29,7 +29,7 @@ This section contains documentation for individual PowerToys modules, including 
 | [Registry Preview](registrypreview.md) | Tool for visualizing and editing Registry files |
 | [Screen Ruler](screenruler.md) | Tool for measuring pixel distances and color boundaries on screen |
 | [Shortcut Guide](shortcut_guide.md) | Tool for displaying Windows keyboard shortcuts when holding the Windows key |
-| [Text Extractor (PowerOCR)](textextractor.md) | Screen text extractor with local WinRT OCR, Direct Gemini Vision OCR, and AI code/table cleanup |
+| [Text Extractor (PowerOCR)](textextractor.md) | Standalone WinUI 3 screen text extractor with local WinRT OCR, freeze-frame multi-monitor capture, and background LLM code/table cleanup |
 | [Workspaces](workspaces.md) | Tool for saving and restoring window layouts for different projects |
 | [ZoomIt](zoomit.md) | Screen zoom and annotation tool |
 

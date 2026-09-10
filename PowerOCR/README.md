@@ -1,30 +1,10 @@
-# Text Extractor (PowerOCR)
+# PowerOCR (Text Extractor) — Developer Guide
 
-[Public overview - Microsoft Learn](https://learn.microsoft.com/en-us/windows/powertoys/text-extractor)
-
-## Quick Links
-
-[All Issues](https://github.com/microsoft/PowerToys/issues?q=is%3Aopen%20label%3A%22Product-Text%20Extractor%22)<br>
-[Bugs](https://github.com/microsoft/PowerToys/issues?q=is%3Aopen%20label%3AIssue-Bug%20label%3A%22Product-Text%20Extractor%22)<br>
-[Pull Requests](https://github.com/microsoft/PowerToys/pulls?q=is%3Apr+is%3Aopen+label%3A%22Product-Text+Extractor%22)
+PowerOCR is a standalone, high-performance WinUI 3 desktop application that enables instant, freeze-frame region capture, offline Windows OCR extraction, and background LLM post-processing for markdown tables, code syntax restoration, and OCR noise cleanup.
 
 ---
 
-## Overview
-
-**Text Extractor (PowerOCR)** is a standalone, high-performance WinUI 3 Windows desktop utility that enables users to extract, clean, format, and copy text, tables, and code from anywhere on their screen.
-
-PowerOCR is engineered with:
-1. **Background Anchor Lifecycle**: A hidden, persistent `MainWindow` (`WS_EX_TOOLWINDOW`) that keeps the unpackaged WinUI 3 process active in the background without taskbar clutter, preventing application exit when overlays close.
-2. **Multi-Monitor Freeze-Frame Capture**: Uses `ScreenCaptureHelper` to capture an instant 32bpp GDI desktop screenshot across all active displays—explicitly supporting negative virtual monitor coordinates and Per-Monitor v2 DPI scaling.
-3. **Dual-Stage Pipeline (`OcrPipelineManager`)**:
-   - **Stage 1 (Immediate Local OCR)**: WinRT `OcrEngine` extracts raw text immediately to the Windows Clipboard on mouse release.
-   - **Stage 2 (Background LLM Formatting)**: Asynchronously calls `LlmFormattingService` to clean OCR noise, reconstruct Markdown tables, and format code syntax, updating the clipboard with an interactive Toast **Undo** option.
-4. **Win32 Message Subclassing**: Uses `SetWindowSubclass` to intercept `WM_HOTKEY` (0x0312) directly on the anchor `HWND`.
-
----
-
-## Architecture & Components
+## Architecture Overview
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -68,59 +48,113 @@ PowerOCR is engineered with:
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Core Source Files:
-- **`App.xaml / App.xaml.cs`**: Unpackaged application lifecycle, toast notification registration (`AppNotificationManager.Default.Register()`), and diagnostic `--test-pipeline` evaluation.
-- **`MainWindow.xaml / .cs`**: Hidden persistent anchor window (`WS_EX_TOOLWINDOW`, `ShowWindow(SW_HIDE)`), `AppWindow.Closing` cancel handler, and Win32 `SetWindowSubclass` message hook.
-- **`Helpers/ScreenCaptureHelper.cs`**: Monitor enumeration, DPI scaling resolution (`DpiScale = DpiX / 96.0`), and GDI freeze-frame capture.
-- **`Helpers/OcrHelper.cs`**: GDI `Bitmap` to WinRT `IRandomAccessStream` bridge, `SoftwareBitmap` normalization (`Bgra8` + `Premultiplied`), and `OcrEngine.RecognizeAsync`.
-- **`Services/OverlayCoordinator.cs`**: Multi-window overlay coordinator managing overlay activation and disposal across all monitors.
-- **`Services/OcrPipelineManager.cs`**: Orchestrates Stage 1 immediate clipboard copy, Stage 2 background LLM formatting, race-condition checks, and Toast Undo actions.
-- **`Services/LlmFormattingService.cs`**: Singleton `HttpClient` handling Ollama (`/api/generate`) and OpenAI/Gemini (`/v1/chat/completions`) endpoints with strict 5-second timeout protection.
-- **`UI/CaptureOverlayWindow.xaml / .cs`**: Borderless WinUI 3 overlay window with `KeyboardAccelerator` (Escape) and DPI-scaled pointer selection.
+---
+
+## Directory Structure
+
+```text
+PowerOCR/
+├── App.xaml / App.xaml.cs             # Application entrypoint & toast notification lifecycle
+├── MainWindow.xaml / .cs              # Hidden anchor window, Win32 subclass, hotkey dispatcher
+├── Helpers/
+│   ├── OcrHelper.cs                   # GDI to WinRT IRandomAccessStream & OcrEngine bridge
+│   └── ScreenCaptureHelper.cs         # Win32 monitor enumeration & freeze-frame capture
+├── Interop/
+│   └── NativeMethods.cs               # P/Invoke signatures (User32, Comctl32, Shcore)
+├── Services/
+│   ├── HotkeyManager.cs               # Win32 RegisterHotKey and SetWindowSubclass hook
+│   ├── LlmFormattingService.cs        # Singleton HttpClient, 5s timeout, system prompt
+│   ├── NotificationService.cs         # Windows Toast builder (AppNotificationBuilder)
+│   ├── OcrPipelineManager.cs          # Dual-stage pipeline, concurrency, Undo handler
+│   ├── OverlayCoordinator.cs          # Multi-window coordinator & screenshot distributor
+│   └── SettingsService.cs             # AppData settings persistence
+├── Settings/
+│   ├── AppSettings.cs                 # Hotkey & language preferences model
+│   └── LlmConfig.cs                   # LLM provider, endpoint, model, and API key model
+├── UI/
+│   ├── CaptureOverlayWindow.xaml      # XAML layout (Image -> Tint -> Selection Canvas)
+│   └── CaptureOverlayWindow.xaml.cs   # DPI selection math & pointer interaction
+└── appsettings.json                   # Default application settings
+```
 
 ---
 
-## Configuration & File Locations
+## Prerequisites
 
-- **General Settings**: `%APPDATA%\PowerOCR\appsettings.json`
-  ```json
-  {
-    "Hotkey": {
-      "Modifiers": "Win+Shift",
-      "Key": "O"
-    },
-    "PreferredLanguage": ""
-  }
-  ```
-- **LLM Settings**: `%LOCALAPPDATA%\PowerOCR\llm_settings.json`
-  ```json
-  {
-    "Provider": "OpenAI",
-    "Endpoint": "https://api.openai.com/v1/chat/completions",
-    "Model": "gpt-4o-mini",
-    "ApiKey": ""
-  }
-  ```
-- **Diagnostic Crop Artifact**: `%APPDATA%\PowerOCR\last_crop.png`
+- **OS**: Windows 10 (Build 17763+) or Windows 11 (Developer Mode enabled)
+- **.NET SDK**: 10.0+ (`net10.0-windows10.0.26100.0`)
+- **Windows App SDK**: 1.8+
+- **WinApp CLI**: 0.6+ (`winapp`)
 
 ---
 
-## Building & Running Standalone
+## Build & Run
 
-### Build:
+### 1. Build with .NET CLI
 ```powershell
 cd PowerOCR
 dotnet build -c Debug
 ```
 
-### Run (Attached Diagnostics with WinApp CLI):
+### 2. Run with WinApp CLI (Attached Debug Stream)
 ```powershell
-cd PowerOCR
 winapp run . --debug-output
 ```
+*Attaches live debugger output streaming, capturing `OutputDebugString`, stdout, and WinUI stowed-exception triage.*
 
-### Automated Diagnostic Pipeline Verification:
+### 3. Automated End-to-End Diagnostic Test
 ```powershell
 winapp run . --debug-output --args "--test-pipeline"
 ```
+*Automatically draws a synthetic text bitmap, runs it through the WinRT OCR engine, copies raw text to clipboard, executes the LLM formatting service, updates the clipboard with enhanced Markdown, and displays diagnostic logs.*
 
+### 4. Stop Running Processes
+```powershell
+Stop-Process -Name "PowerOCR" -Force -ErrorAction SilentlyContinue
+```
+
+---
+
+## Configuration
+
+### General Settings
+Stored in `%APPDATA%\PowerOCR\appsettings.json`:
+```json
+{
+  "Hotkey": {
+    "Modifiers": "Win+Shift",
+    "Key": "O"
+  },
+  "PreferredLanguage": ""
+}
+```
+
+### LLM Settings
+Stored in `%LOCALAPPDATA%\PowerOCR\llm_settings.json`:
+```json
+{
+  "Provider": "OpenAI",
+  "Endpoint": "https://api.openai.com/v1/chat/completions",
+  "Model": "gpt-4o-mini",
+  "ApiKey": ""
+}
+```
+
+#### Supported LLM Endpoints:
+- **Local Ollama (Native)**: `http://localhost:11434/api/generate` (Model: `llama3.2`)
+- **Local Ollama (OpenAI API)**: `http://localhost:11434/v1/chat/completions` (Model: `llama3.2`)
+- **OpenAI**: `https://api.openai.com/v1/chat/completions` (Model: `gpt-4o-mini`)
+- **Google Gemini**: `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (Model: `gemini-2.5-flash`)
+
+---
+
+## User Controls & Keybindings
+
+| Key / Action | Context | Result |
+|---|---|---|
+| <kbd>Win</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd> | Global | Freezes all displays and activates selection overlay |
+| Left-Click + Drag | Overlay | Draws rectangular selection marquee |
+| Left-Click Release | Overlay | Crops selected region, extracts OCR, and closes overlay |
+| <kbd>Escape</kbd> | Overlay | Dismisses capture overlay immediately |
+| Right-Click | Overlay | Dismisses capture overlay immediately |
+| Click "Undo" on Toast | Post-Capture | Reverts clipboard to raw, unformatted OCR text |
