@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 
+using ManagedCommon;
+using Microsoft.PowerToys.Settings.UI.Library.Utilities;
 using PowerOCR.Helpers;
 using PowerOCR.Services;
 using PowerOCR.Settings;
@@ -52,7 +54,7 @@ internal sealed partial class KeyboardMonitor : IDisposable
                 _activationKeys.Add(key.Trim());
             }
 
-            _activationKeys.Sort();
+            _activationKeys.Sort(StringComparer.OrdinalIgnoreCase);
         }
 
         DebugLogger.LogInfo($"Configured Activation Keys: [{string.Join(", ", _activationKeys)}]");
@@ -86,7 +88,7 @@ internal sealed partial class KeyboardMonitor : IDisposable
             currentlyPressedKeys.Add(name);
         }
 
-        currentlyPressedKeys.Sort();
+        currentlyPressedKeys.Sort(StringComparer.OrdinalIgnoreCase);
 
         if (currentlyPressedKeys.Count == 0 && _previouslyPressedKeys.Count != 0)
         {
@@ -96,8 +98,15 @@ internal sealed partial class KeyboardMonitor : IDisposable
 
         _previouslyPressedKeys = currentlyPressedKeys;
 
+        if (currentlyPressedKeys.Count >= 2)
+        {
+            Logger.LogInfo($"Keyboard hook detected: [{string.Join(", ", currentlyPressedKeys)}], waiting for: [{string.Join(", ", _activationKeys)}]");
+        }
+
         if (ArraysAreSame(currentlyPressedKeys, _activationKeys))
         {
+            Logger.LogInfo("Activation shortcut matched! Launching OCR overlay...");
+
             // avoid triggering this action multiple times as this will be called nonstop while keys are pressed
             if (!_activationShortcutPressed)
             {
@@ -117,7 +126,7 @@ internal sealed partial class KeyboardMonitor : IDisposable
 
         for (int i = 0; i < first.Count; i++)
         {
-            if (first[i] != second[i])
+            if (!string.Equals(first[i], second[i], StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

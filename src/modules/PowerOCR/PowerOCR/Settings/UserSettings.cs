@@ -18,7 +18,7 @@ namespace PowerOCR.Settings
     {
         private readonly SettingsUtils _settingsUtils;
         private const string PowerOcrModuleName = "TextExtractor";
-        private const string DefaultActivationShortcut = "Win + Shift + O";
+        private const string DefaultActivationShortcut = "Win + Shift + T";
         private const int MaxNumberOfRetry = 5;
         private const int SettingsReadOnChangeDelayInMs = 300;
 
@@ -61,8 +61,16 @@ namespace PowerOCR.Settings
                             var settings = _settingsUtils.GetSettingsOrDefault<PowerOcrSettings>(PowerOcrModuleName);
                             if (settings != null)
                             {
-                                ActivationShortcut.Value = settings.Properties.ActivationShortcut.ToString();
-                                PreferredLanguage.Value = settings.Properties.PreferredLanguage.ToString();
+                                var shortcutStr = settings.Properties?.ActivationShortcut?.ToString();
+                                if (string.IsNullOrWhiteSpace(shortcutStr))
+                                {
+                                    shortcutStr = settings.Properties?.DefaultActivationShortcut?.ToString() ?? DefaultActivationShortcut;
+                                    Logger.LogInfo($"TextExtractor settings had empty shortcut, falling back to default: '{shortcutStr}'");
+                                }
+
+                                ActivationShortcut.Value = shortcutStr;
+                                PreferredLanguage.Value = settings.Properties?.PreferredLanguage?.ToString() ?? string.Empty;
+                                Logger.LogInfo($"TextExtractor settings loaded: ActivationShortcut='{ActivationShortcut.Value}', PreferredLanguage='{PreferredLanguage.Value}'");
                             }
 
                             retry = false;
