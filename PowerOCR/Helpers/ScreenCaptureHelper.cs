@@ -43,14 +43,14 @@ public static class ScreenCaptureHelper
 {
     private const uint MONITORINFOF_PRIMARY = 0x00000001;
 
-    public static List<MonitorInfo> GetMonitors()
+    public static unsafe List<MonitorInfo> GetMonitors()
     {
         var monitors = new List<MonitorInfo>();
 
-        NativeMethods.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr hMonitor, IntPtr hdc, ref NativeMethods.RECT rc, IntPtr data) =>
+        NativeMethods.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr hMonitor, IntPtr hdc, IntPtr lprc, IntPtr data) =>
         {
             var mi = new NativeMethods.MONITORINFOEX();
-            mi.cbSize = Marshal.SizeOf(typeof(NativeMethods.MONITORINFOEX));
+            mi.cbSize = sizeof(NativeMethods.MONITORINFOEX);
 
             if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
             {
@@ -60,7 +60,7 @@ public static class ScreenCaptureHelper
                 try
                 {
                     int hr = NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MonitorDpiType.MDT_EFFECTIVE_DPI, out dpiX, out dpiY);
-                    if (hr != 0)
+                    if (hr != 0 || dpiX == 0)
                     {
                         dpiX = 96;
                         dpiY = 96;
@@ -72,10 +72,12 @@ public static class ScreenCaptureHelper
                     dpiY = 96;
                 }
 
+                string deviceName = new string(mi.szDevice);
+
                 monitors.Add(new MonitorInfo
                 {
                     Handle = hMonitor,
-                    DeviceName = mi.szDevice,
+                    DeviceName = deviceName,
                     Bounds = mi.rcMonitor,
                     DpiX = dpiX,
                     DpiY = dpiY,

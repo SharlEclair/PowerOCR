@@ -44,18 +44,19 @@ public sealed partial class CaptureOverlayWindow : Window
 
     private void ConfigureWindowChrome()
     {
-        var presenter = AppWindow.Presenter as OverlappedPresenter;
-        if (presenter == null)
+        ExtendsContentIntoTitleBar = true;
+        if (AppWindow.TitleBar != null)
         {
-            presenter = OverlappedPresenter.Create();
-            AppWindow.SetPresenter(presenter);
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Collapsed;
         }
 
-        presenter.IsResizable = false;
-        presenter.IsMaximizable = false;
-        presenter.IsMinimizable = false;
-        presenter.SetBorderAndTitleBar(false, false);
-        presenter.IsAlwaysOnTop = true;
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.IsResizable = false;
+            presenter.IsMaximizable = false;
+            presenter.IsMinimizable = false;
+            presenter.IsAlwaysOnTop = true;
+        }
 
         // Position and size the window to cover the physical monitor bounds
         AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(
@@ -63,13 +64,6 @@ public sealed partial class CaptureOverlayWindow : Window
             _capture.Monitor.Bounds.top,
             _capture.Monitor.Bounds.Width,
             _capture.Monitor.Bounds.Height));
-
-        // Strip from Alt+Tab and taskbar
-        IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        long exStyle = NativeMethods.GetWindowLongPtr(hWnd, NativeMethods.GWL_EXSTYLE).ToInt64();
-        exStyle |= NativeMethods.WS_EX_TOOLWINDOW;
-        exStyle &= ~NativeMethods.WS_EX_APPWINDOW;
-        NativeMethods.SetWindowLongPtr(hWnd, NativeMethods.GWL_EXSTYLE, new IntPtr(exStyle));
     }
 
     private void OnCanvasPointerPressed(object sender, PointerRoutedEventArgs e)
@@ -153,7 +147,6 @@ public sealed partial class CaptureOverlayWindow : Window
         DrawingCanvas.ReleasePointerCaptures();
         SelectionBorder.Visibility = Visibility.Collapsed;
         CaptureCancelled?.Invoke(this, EventArgs.Empty);
-        this.Close();
     }
 
     private void OnRootGridKeyDown(object sender, KeyRoutedEventArgs e)

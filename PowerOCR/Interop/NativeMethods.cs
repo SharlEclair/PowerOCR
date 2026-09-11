@@ -78,21 +78,20 @@ public static class NativeMethods
         public int Height => bottom - top;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    public struct MONITORINFOEX
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public unsafe struct MONITORINFOEX
     {
         public int cbSize;
         public RECT rcMonitor;
         public RECT rcWork;
         public uint dwFlags;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-        public string szDevice;
+        public fixed char szDevice[32];
     }
 
     public delegate bool MonitorEnumProc(
         IntPtr hMonitor,
         IntPtr hdcMonitor,
-        ref RECT lprcMonitor,
+        IntPtr lprcMonitor,
         IntPtr dwData);
 
     [DllImport("user32.dll")]
@@ -102,7 +101,8 @@ public static class NativeMethods
         MonitorEnumProc lpfnEnum,
         IntPtr dwData);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
 
     public enum MonitorDpiType
