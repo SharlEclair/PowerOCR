@@ -20,7 +20,7 @@ public sealed class HotkeyConfig
     public string Modifiers { get; set; } = "Win+Shift";
 
     [JsonPropertyName("Key")]
-    public string Key { get; set; } = "O";
+    public string Key { get; set; } = "T";
 }
 
 

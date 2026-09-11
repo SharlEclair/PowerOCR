@@ -10,7 +10,7 @@ PowerOCR is a standalone, high-performance WinUI 3 desktop application that enab
 ┌───────────────────────────────────────────────────────────────────────────────┐
 │                           MainWindow (Hidden Anchor)                          │
 │   - Keeps process alive in background (WS_EX_TOOLWINDOW)                     │
-│   - Hooks WM_HOTKEY (0x0312) via SetWindowSubclass (Win + Shift + O)         │
+│   - Hooks WM_HOTKEY (0x0312) via SetWindowSubclass (Win + Shift + T)         │
 │   - Hosts DispatcherQueue for thread-safe UI & clipboard operations           │
 └──────────────────────────────────────┬────────────────────────────────────────┘
                                        │ Hotkey Triggered
@@ -123,7 +123,7 @@ Stored in `%APPDATA%\PowerOCR\appsettings.json`:
 {
   "Hotkey": {
     "Modifiers": "Win+Shift",
-    "Key": "O"
+    "Key": "T"
   },
   "PreferredLanguage": ""
 }

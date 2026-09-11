@@ -68,7 +68,7 @@ public sealed class HotkeyManager : IDisposable
             }
         }
 
-        uint vk = 0x4F; // Default 'O'
+        uint vk = 0x54; // Default 'T'
         if (!string.IsNullOrEmpty(config.Key))
         {
             if (Enum.TryParse<Windows.System.VirtualKey>(config.Key, true, out var parsedKey))
